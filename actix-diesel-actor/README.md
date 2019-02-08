@@ -2,7 +2,16 @@
 > Packages diesel queries into actix messages
 
 Provides message types to package diesel queries into actix messages.
-Provides actors to act on these messeages.
+Provides actors to act on these messeages, and execute queries.
+
+The SQuery Message can be used for anything which is a complete diesel query and implements diesel SelectQuery.
+This is useful for when your app does read operations to a read only replica of your database.
+The WQuery accepts write operations like INSERT,UPDATE,DELETE in addition to SELECT.
+This can be used for generic purpose or when your db cluster has many replicas and one writable master DB.
+
+The db connections are configurable using environment variables, so you can pass the db connections to the app from your swarm configuration tool, like Kubernetes.
+
+At the moment it only supports PostgreSQL.
 
 ## Usage
 Helpers to create an actix-web app:
@@ -36,3 +45,19 @@ pub fn index(req: &HttpRequest<AppState>) -> Result<HttpResponse, crate::db::DbE
     Ok(HttpResponse::Found().finish())
 }
 ```
+
+## License
+
+Licensed under either of these:
+
+ * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
+   https://www.apache.org/licenses/LICENSE-2.0)
+ * MIT license ([LICENSE-MIT](LICENSE-MIT) or
+   https://opensource.org/licenses/MIT)
+
+### Contributing
+
+Unless you explicitly state otherwise, any contribution you intentionally submit
+for inclusion in the work, as defined in the Apache-2.0 license, shall be
+dual-licensed as above, without any additional terms or conditions.
+
