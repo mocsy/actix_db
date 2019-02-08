@@ -1,0 +1,9 @@
+[workspace]
+members = [
+    "actix-diesel-actor",
+    "actix-diesel-session",
+]
+
+[replace]
+"actix-diesel-actor:0.1.0" = { path = "actix-diesel-actor" }
+"actix-diesel-session:0.0.1" = { path = "actix-diesel-session" }
