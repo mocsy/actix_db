@@ -2,9 +2,10 @@ use diesel::prelude::*;
 use diesel::r2d2;
 use diesel::r2d2::{ ConnectionManager, Pool };
 use diesel::result::Error;
-use diesel::query_builder::SelectQuery;
+use diesel::query_builder::{SelectQuery, QueryFragment};
 use ::actix::prelude::*;
 use diesel::query_dsl::LoadQuery;
+use diesel::pg::Pg;
 use std::marker::PhantomData;
 use std::env;
 use dotenv::dotenv;
@@ -29,12 +30,13 @@ pub struct SQuery<S,I> {
 impl<S,I:'static> Message for SQuery<S,I>{
     type Result = Result<Vec<I>, Error>;
 }
-impl<S: LoadQuery<PgConnection, I>+SelectQuery,I:'static> Handler<SQuery<S,I>> for DbExecutor<PgConnection> {
+impl<S: LoadQuery<PgConnection, I>+SelectQuery+QueryFragment<Pg>,I:'static> Handler<SQuery<S,I>> for DbExecutor<PgConnection> {
     type Result = Result<Vec<I>, Error>;
 
     fn handle(&mut self, msg: SQuery<S,I>, _: &mut Self::Context) -> Self::Result {
         let pool = &self.pool;
-        debug!("handle Queries");
+        let dbg = diesel::debug_query(&msg.select);
+        debug!("{:?}", dbg);
         if let Ok(conn) = pool.get() {
             let res = msg.select.load::<I>(&conn);
             return res;
@@ -50,12 +52,13 @@ pub struct WQuery<W,I> {
 impl<W,I:'static> Message for WQuery<W,I>{
     type Result = Result<Vec<I>, Error>;
 }
-impl<W: LoadQuery<PgConnection, I>,I:'static> Handler<WQuery<W,I>> for DbExecutor<PgConnection> {
+impl<W: LoadQuery<PgConnection, I>+QueryFragment<Pg>,I:'static> Handler<WQuery<W,I>> for DbExecutor<PgConnection> {
     type Result = Result<Vec<I>, Error>;
 
     fn handle(&mut self, msg: WQuery<W,I>, _: &mut Self::Context) -> Self::Result {
         let pool = &self.pool;
-        debug!("handle Queries");
+        let dbg = diesel::debug_query(&msg.query);
+        debug!("{:?}", dbg);
         if let Ok(conn) = pool.get() {
             let res = msg.query.get_results::<I>(&conn);
             return res;
