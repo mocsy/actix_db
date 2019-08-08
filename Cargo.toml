@@ -5,5 +5,5 @@ members = [
 ]
 
 [replace]
-"actix-diesel-actor:0.1.1" = { path = "actix-diesel-actor" }
-"actix-diesel-session:0.0.1" = { path = "actix-diesel-session" }
+"actix-diesel-actor:0.1.2" = { path = "actix-diesel-actor" }
+

@@ -101,6 +101,9 @@ pub struct AppState {
 
 /// Use the Read setting with a connection String to access a read-only db replica
 /// Use the Write setting to udpate with a connection String to a writeable DB
+/// There is a distinct r2d2 pool for each thread the DbExecutor actor runs on.
+/// Therefore the pool is configured with max_size(3) and min_idle(Some(0)):
+/// It creates a maximum of 3 connection per pool, starting with 0.
 pub enum ConnectionType {
     Read,
     Write,
@@ -115,6 +118,8 @@ pub fn db_setup(conn_type: ConnectionType) -> actix::Addr<DbExecutor<diesel::PgC
     let database_url = env::var(var).unwrap_or_else(|_| panic!("{} must be set", var));
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     let pool = r2d2::Pool::builder()
+        .max_size(3)
+        .min_idle(Some(0))
         .build(manager)
         .expect("Failed to create pool.");
     SyncArbiter::start(3, move || DbExecutor { pool: pool.clone() })
