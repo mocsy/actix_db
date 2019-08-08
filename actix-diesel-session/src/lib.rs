@@ -1,5 +1,5 @@
-mod schema;
 mod data;
+mod schema;
 
 #[macro_use]
 extern crate diesel;
@@ -18,14 +18,14 @@ use futures::future::{err as FutErr, ok as FutOk, FutureResult};
 use futures::Future;
 
 use ::actix::prelude::*;
-use actix_web::{ HttpResponse, HttpRequest, Error};
+use actix_diesel_actor::{DbExecutor, WQuery};
 use actix_web::middleware::identity::RequestIdentity;
-use actix_web::middleware::session::{SessionImpl, SessionBackend};
+use actix_web::middleware::session::{SessionBackend, SessionImpl};
 use actix_web::middleware::Response;
-use actix_diesel_actor::{ WQuery, DbExecutor };
+use actix_web::{Error, HttpRequest, HttpResponse};
 
-use crate::schema::user_sessions::dsl::*;
 use crate::data::UserSession;
+use crate::schema::user_sessions::dsl::*;
 
 pub struct DbSession {
     wdb: Addr<DbExecutor<diesel::PgConnection>>,
@@ -35,7 +35,7 @@ pub struct DbSession {
 }
 
 impl SessionImpl for DbSession {
-    fn get(&self, key: &str) -> Option<&str> {   
+    fn get(&self, key: &str) -> Option<&str> {
         if let Some(s) = self.state.get(key) {
             Some(s)
         } else {
@@ -74,21 +74,16 @@ impl SessionImpl for DbSession {
                     query,
                     phantom: PhantomData::<UserSession>,
                 };
-                let usrs = wdb.send(ins)
-                    .wait()
-                    .unwrap().unwrap();
+                let usrs = wdb.send(ins).wait().unwrap().unwrap();
                 debug!("{:?}", usrs);
             } else {
                 let target = user_sessions.filter(skey.eq(self.identity.clone()));
-                let query = diesel::update(target)
-                    .set(sdata.eq(state_value));
+                let query = diesel::update(target).set(sdata.eq(state_value));
                 let upd = WQuery {
                     query,
                     phantom: PhantomData::<UserSession>,
                 };
-                let usrs = wdb.send(upd)
-                    .wait()
-                    .unwrap().unwrap();
+                let usrs = wdb.send(upd).wait().unwrap().unwrap();
                 debug!("{:?}", usrs);
             }
         }
@@ -104,9 +99,7 @@ impl DbSessionBackend {
             query,
             phantom: PhantomData::<UserSession>,
         };
-        wdb.send(sel)
-            .wait()
-            .unwrap().unwrap()
+        wdb.send(sel).wait().unwrap().unwrap()
     }
 }
 impl<S> SessionBackend<S> for DbSessionBackend {
@@ -117,14 +110,22 @@ impl<S> SessionBackend<S> for DbSessionBackend {
         if let Some(identity) = req.identity() {
             let sessions = DbSessionBackend::load(self.0.clone(), identity.clone());
             if sessions.len() > 1 {
-                return FutErr(actix_web::error::ErrorUnauthorized("Session load inconclusive."));
+                return FutErr(actix_web::error::ErrorUnauthorized(
+                    "Session load inconclusive.",
+                ));
             }
             if let Some(usr) = sessions.first() {
                 let res = serde_json::to_string(&usr.sdata);
                 if let Ok(jsn) = res {
                     // self.json = Some(jsn);
-                    let state: HashMap<String, String> = serde_json::from_str(&jsn).unwrap_or_default();
-                    return FutOk(DbSession{wdb: self.0.clone(), identity, state, changed: false});
+                    let state: HashMap<String, String> =
+                        serde_json::from_str(&jsn).unwrap_or_default();
+                    return FutOk(DbSession {
+                        wdb: self.0.clone(),
+                        identity,
+                        state,
+                        changed: false,
+                    });
                 }
             }
         }
