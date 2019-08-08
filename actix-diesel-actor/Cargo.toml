@@ -6,7 +6,7 @@ edition = "2018"
 license = "MIT OR Apache-2.0"
 description = "An actor which accepts diesel queries packaged into Actix messages."
 readme = "README.md"
-repository = "https://github.com/actix_db/actix-diesel-actor"
+repository = "https://github.com/mocsy/actix_db/actix-diesel-actor"
 keywords = ["database", "web", "actix", "diesel"]
 categories = ["asynchronous", "web-programming::http-server", "database"]
 
